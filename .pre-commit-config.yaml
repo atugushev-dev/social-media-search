@@ -1,0 +1,22 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.5.0
+    hooks:
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+      - id: check-toml
+  - repo: https://github.com/pappasam/toml-sort
+    rev: v0.18.0
+    hooks:
+      - id: toml-sort
+        args: [--in-place, --all]
+  - repo: https://github.com/doublify/pre-commit-rust
+    rev: c9d5fe3
+    hooks:
+      - id: fmt
+      - id: cargo-check
+      - id: clippy
