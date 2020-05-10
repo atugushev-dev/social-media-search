@@ -13,6 +13,7 @@ impl StackOverflow {
         let fromdate = Utc::now()
             .checked_sub_signed(Duration::days(days as i64))
             .expect("failed to shift date");
+        println!("Search topics since {} ...", fromdate);
 
         let url = format!(
             "http://api.stackexchange.com/2.2/search/advanced?\
@@ -20,8 +21,6 @@ impl StackOverflow {
             query = query,
             timestamp = fromdate.timestamp(),
         );
-
-        println!("Search topics since {} ...", fromdate);
 
         let res = match client.get(&url).send() {
             Ok(res) => res,
