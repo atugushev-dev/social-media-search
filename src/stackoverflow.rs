@@ -10,17 +10,15 @@ impl StackOverflow {
         StackOverflow {}
     }
     pub fn search(&self, client: &Client, query: &str, days: u32) {
-        println!("Search via StackOverflow: {} - {}", query, days);
-
         let fromdate = Utc::now()
             .checked_sub_signed(Duration::days(days as i64))
             .expect("failed to shift date");
 
         let url = format!(
             "http://api.stackexchange.com/2.2/search/advanced?\
-            order=desc&sort=creation&site=stackoverflow&title={}&fromdate={}",
-            query,
-            fromdate.timestamp()
+            order=desc&sort=creation&site=stackoverflow&title={query}&fromdate={timestamp}",
+            query = query,
+            timestamp = fromdate.timestamp(),
         );
 
         println!("Search topics since {} ...", fromdate);
@@ -40,12 +38,22 @@ impl StackOverflow {
             }
         };
 
-        let items = data["items"].as_array().unwrap();
+        let items = match data.get("items") {
+            Some(items) => items,
+            None => {
+                println!("Incorrect response, key `items` not found");
+                return;
+            }
+        }
+        .as_array()
+        .unwrap();
 
         for item in items {
             println!("- {}", item["link"].as_str().unwrap());
         }
 
-        println!("Found {} topics.", items.len());
+        if items.len() == 0 {
+            println!("Nothin found.");
+        }
     }
 }
