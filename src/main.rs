@@ -1,72 +1,52 @@
+mod hackernews;
+mod stackoverflow;
+
 extern crate chrono;
 extern crate reqwest;
 
-use chrono::{Duration, Utc};
-use serde_json::Value;
 use structopt::StructOpt;
+
+#[derive(Debug, StructOpt)]
+struct Opts {
+    #[structopt(short, long)]
+    query: String,
+
+    #[structopt(short, long, required = false, default_value = "1")]
+    days: u32,
+
+    #[structopt(subcommand)]
+    cmd: Command,
+}
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "social-media-search")]
 enum Command {
     /// Stack Overflow
     #[structopt(name = "so")]
-    StackOverflow {
-        query: String,
-
-        #[structopt(short, long, required = false, default_value = "1")]
-        days: i64,
-    },
+    StackOverflow,
     /// Twitter
     #[structopt(name = "tw")]
-    Twitter { query: String },
+    Twitter,
     /// Hacker News
     #[structopt(name = "hn")]
-    HackerNews { query: String },
+    HackerNews,
 }
 
 fn main() {
     let client = reqwest::blocking::Client::builder()
         .gzip(true)
         .build()
-        .unwrap();
+        .expect("failed to build client");
 
-    match Command::from_args() {
-        Command::StackOverflow { query, days } => {
-            let fromdate = Utc::now()
-                .checked_sub_signed(Duration::days(days))
-                .unwrap()
-                .timestamp();
+    let opts = Opts::from_args();
 
-            let url = format!(
-                "http://api.stackexchange.com/2.2/search/advanced?\
-                order=desc&sort=creation&site=stackoverflow&title={}&fromdate={}",
-                query, fromdate
-            );
-
-            let res = match client.get(&url).send() {
-                Ok(res) => res,
-                Err(e) => {
-                    println!("Fetch url error :{} :{}", url, e);
-                    return;
-                }
-            };
-            let data: Value = match res.json() {
-                Ok(data) => data,
-                Err(e) => {
-                    println!("Parse JSON error: {}", e);
-                    return;
-                }
-            };
-
-            for item in data["items"].as_array().unwrap() {
-                println!("- {}", item["link"].as_str().unwrap());
-            }
+    match opts.cmd {
+        Command::StackOverflow => {
+            stackoverflow::StackOverflow::new().search(&client, &opts.query, opts.days)
         }
-        Command::Twitter { query } => {
-            println!("{}", query);
+        Command::HackerNews => {
+            hackernews::HackerNews::new().search(&client, &opts.query, opts.days)
         }
-        Command::HackerNews { query } => {
-            println!("{}", query);
-        }
+        _ => (),
     }
 }
